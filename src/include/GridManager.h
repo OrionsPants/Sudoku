@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Grid.h"
+#include "Solver.h"
 
 class GridManager
 {
@@ -24,6 +25,14 @@ public:
 	bool IsValidInput(const uint input_value);
 
 	bool EraseCellDigit();
+
+	bool CompleteGrid();
+
+	bool FillWithSolution();
+
+	GridState CheckGridState();
+
+
 	/*
 
 	void PanicMode()
@@ -161,6 +170,7 @@ private:
 
 private:
 	Grid grid;
+	Solver m_solver;
 
 public:
 	std::array<int, 81> digits;

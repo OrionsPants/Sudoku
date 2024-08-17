@@ -10,6 +10,7 @@ GridManager::GridManager()
 	}
 	ui = GridUI({0.0f, 0.0f}, {50.0f, 50.0f}, 3.0f, 1.0f, font);
 	ui.Update(grid);
+	m_solver.Solve(grid.solution);
 }
 
 GridUI& GridManager::GetUI()
@@ -76,7 +77,10 @@ bool GridManager::SetCellDigit(const uint value)
 
 	grid.SetDigit(clicked_cell.value(), value);
 	ui.SetCellText(clicked_cell.value(), value);
-	return true;
+	if(CheckGridState() == GridState::Solved)
+		exit(0);
+
+	return false;
 }
 
 bool GridManager::IsValidInput(const uint input_value)
@@ -88,9 +92,38 @@ bool GridManager::EraseCellDigit()
 {
 	if(!clicked_cell.has_value())
 		return false;
-	grid.DeleteDigit(clicked_cell.value());
-	ui.SetCellText(clicked_cell.value(), 0);
-    ui.ResetHighlighting();
+	if(grid.DeleteDigit(clicked_cell.value()))
+		ui.SetCellText(clicked_cell.value(), 0);
+
+	ui.ResetHighlighting();
+	CheckGridState();
 
 	return true;
+}
+
+bool GridManager::FillWithSolution()
+{
+	grid.current_digits = grid.solution;
+	ui.Update(grid);
+	return false;
+}
+
+GridState GridManager::CheckGridState()
+{
+	if(grid.current_digits == grid.solution)
+	{
+		return GridState::Solved;
+	}
+
+	if(!m_solver.CanFindSolution(grid.current_digits))
+	{
+		ui.ErrorState();
+		return GridState::Error;
+	}
+	else
+	{
+		ui.NormalState();
+		ui.HighlightCellAndCross(clicked_cell.value());
+		return GridState::Solveable;
+	}
 }

@@ -22,10 +22,10 @@ struct Grid
 		: width(width_)
 		, height(height_)
 	{
-		current_digits = std::vector<uint>(width * height, 0);
-		solution = std::vector<uint>(width * height, 0);
+
 		FillExample();
 
+		solution = current_digits;
 		InitLockedCells();
 	}
 
@@ -70,17 +70,18 @@ struct Grid
 		current_digits[index] = value;
 	}
 
-	void DeleteDigit(const uint index)
+	bool DeleteDigit(const uint index)
 	{
 		if(IsCellLocked(index))
-			return;
+			return false;
 
 		current_digits[index] = 0;
+		return true;
 	}
 
-	std::vector<uint> current_digits;
+	std::array<uint, 81> current_digits;
 	std::unordered_map<uint, bool> locked_cells;
-	std::vector<uint> solution;
+	std::array<uint, 81> solution;
 
 	uint width;
 	uint height;
@@ -102,6 +103,46 @@ struct GridUI
 	{
 		InitCellPositions();
 		InitGridColorsAndShape();
+		NormalState();
+	}
+
+	void ErrorState()
+	{
+		for(auto& cell : cells)
+		{
+			cell.setOutlineColor(color::crimson);
+		}
+		for(int i = 0; i < 4; i++)
+		{
+			auto& outline = box_outlines[i];
+			outline.setFillColor(color::crimson);
+		}
+
+		for(int i = 4; i < 8; i++)
+		{
+			auto& outline = box_outlines[i];
+			outline.setFillColor(color::crimson);
+		}
+	}
+
+	void NormalState()
+	{
+		for(auto& cell : cells)
+		{
+			cell.setFillColor(color::white);
+			cell.setOutlineColor(color::light_grey);
+		}
+		for(int i = 0; i < 4; i++)
+		{
+			auto& outline = box_outlines[i];
+			outline.setFillColor(color::black);
+		}
+
+		for(int i = 4; i < 8; i++)
+		{
+			auto& outline = box_outlines[i];
+			outline.setFillColor(color::black);
+		}
 	}
 
 	void HighlightCellAndCross(const uint index)
@@ -110,30 +151,34 @@ struct GridUI
 		uint col = index % 9;
 		for(uint i = 0; i < 9; i++)
 		{
-			cells[i + row * 9].setFillColor(highlight_color_secondary);
-			cells[col + i * 9].setFillColor(highlight_color_secondary);
+			cells[i + row * 9].setFillColor(color::shaded);
+			cells[col + i * 9].setFillColor(color::shaded);
 		}
-		cells[index].setFillColor(highlight_color_main);
+		for(int i = 0; i < 81; i++){
+			if(cells_text[index].getString() == "") break;
+			if(cells_text[i].getString() == cells_text[index].getString()){
+				cells[i].setFillColor(color::shaded);
+			}
+		}
+		cells[index].setFillColor(color::light_grey);
 	}
 
 	void ResetHighlighting()
 	{
-		for(auto& cell : cells)
-		{
-			cell.setFillColor(background_color_normal);
-		}
+		NormalState();
 	}
 
-	void SetCellText(uint index, uint value){
+	void SetCellText(uint index, uint value)
+	{
 		auto& text = cells_text[index];
 		text.setFont(font);
 		text.setCharacterSize(24);
 		text.setFillColor(sf::Color::Black);
 		text.setString(std::to_string(value));
 		text.setOrigin(text.getLocalBounds().getSize() / 2.0f +
-						text.getLocalBounds().getPosition());
+					   text.getLocalBounds().getPosition());
 		text.setPosition(cells[index].getGlobalBounds().getPosition() +
-							cells[index].getLocalBounds().getSize() / 2.f);
+						 cells[index].getLocalBounds().getSize() / 2.f);
 		if(value == 0)
 			text.setString("");
 	}
@@ -143,7 +188,7 @@ struct GridUI
 		SetText(grid.current_digits);
 	}
 
-	void SetText(const std::vector<uint>& digits)
+	void SetText(const std::array<uint, 81>& digits)
 	{
 		for(int i = 0; i < digits.size(); i++)
 		{
@@ -153,7 +198,8 @@ struct GridUI
 
 	void SetGridCenter(const sf::Vector2f& pos)
 	{
-		sf::Vector2f current_left_top_corner = cells[0].getPosition();
+		sf::Vector2f current_left_top_corner =
+			cells[0].getPosition() - cell_size * border_percentage;
 		sf::Vector2f dimensions = cell_size * (9.0f + border_percentage);
 		sf::Vector2f current_center = dimensions / 2.0f - current_left_top_corner;
 		for(auto& cell : cells)
@@ -181,9 +227,10 @@ struct GridUI
 		for(auto& cell : cells)
 		{
 			cell.setSize(cell_size - (cell_size * border_percentage));
-			cell.setFillColor(background_color_normal);
-			cell.setOutlineColor(border_color_light);
+			cell.setFillColor(color::white);
+			cell.setOutlineColor(color::light_grey);
 			cell.setOutlineThickness(cell_size.x * border_percentage);
+			
 		}
 		SetOutlinePosition();
 	}
@@ -193,17 +240,19 @@ struct GridUI
 		for(int i = 0; i < 4; i++)
 		{
 			auto& outline = box_outlines[i];
-			outline.setFillColor(border_color_normal);
 			outline.setSize({cell_size.x * (9 + border_percentage * 2.0f), 2.5f});
 			outline.setPosition({position.x, position.y + i * (cell_size.y * 3)});
+			outline.setFillColor(color::black);
+
 		}
 
 		for(int i = 4; i < 8; i++)
 		{
 			auto& outline = box_outlines[i];
-			outline.setFillColor(border_color_normal);
 			outline.setSize({2.5f, cell_size.y * (9 + border_percentage)});
 			outline.setPosition({position.x + (i - 4) * (cell_size.x * 3), position.y});
+			outline.setFillColor(color::black);
+
 		}
 	}
 
@@ -217,12 +266,5 @@ struct GridUI
 	uint font_size = 24;
 	sf::Vector2f position;
 
-	sf::Color background_color_normal = sf::Color::White;
-	sf::Color background_color_alert = sf::Color::Red;
-	sf::Color border_color_normal = sf::Color::Black;
-	sf::Color border_color_light = sf::Color(120, 120, 120, 255);
-	sf::Color highlight_color_main = sf::Color(125, 125, 125, 255);
-	sf::Color highlight_color_secondary = sf::Color(160, 160, 160, 255);
 	sf::Font font;
 };
-

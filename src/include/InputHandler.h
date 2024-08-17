@@ -33,10 +33,10 @@ class InputHandler
 {
 public:
 	InputHandler() = delete;
-	InputHandler(GridManager& grid_manager, sf::RenderWindow& window, Solver& solver)
+	InputHandler(GridManager& grid_manager, sf::RenderWindow& window, Solver& solver, InputBar& input_bar)
 		: grid_manager(grid_manager)
 		, m_window(window)
-		//, m_input_bar(input_bar)
+		, r_input_bar(input_bar)
 		, r_solver(solver)
 	{ }
 
@@ -101,11 +101,6 @@ private:
 				break;
 			}
 		}
-		//if(m_grid.CheckSolution()){
-		//	m_grid.RelaxMode();
-		//}else{
-		//	m_grid.PanicMode();
-		//}
 	}
 
 	void MouseButtonPressed(const sf::Event& event)
@@ -115,14 +110,8 @@ private:
 			mouse_left_is_pressed = true;
 			m_mouse_position = sf::Mouse::getPosition(m_window);
 
-				bool grid_clicked = grid_manager.ClickAtPosition(m_mouse_position);
-				std::cout << grid_clicked;
-				//bool input_bar_clicked =
-				//	m_input_bar.ClickAtPosition(m_mouse_position, m_grid, r_solver);
-//
-				//if(grid_clicked && input_bar_clicked)
-				//	throw std::runtime_error(
-				//		"Impossible Case: both grid and input bar clicked at same time!");
+				grid_manager.ClickAtPosition(m_mouse_position);
+				r_input_bar.ClickAtPosition(m_mouse_position);
 		}
 	}
 
@@ -141,6 +130,6 @@ private:
 	bool key_pressed = false;
 
 	sf::RenderWindow& m_window;
-	//InputBar& m_input_bar;
+	InputBar& r_input_bar;
 	GridManager& grid_manager;
 };

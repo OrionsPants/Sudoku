@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <unordered_map>
 
-bool Solver::Solve(std::array<int, 81>& grid)
+bool Solver::Solve(std::array<uint, 81>& grid)
 {
 	if(Backtrack(grid))
 	{
@@ -15,12 +15,12 @@ bool Solver::Solve(std::array<int, 81>& grid)
 	}
 }
 
-bool Solver::CanFindSolution(std::array<int, 81> grid)
+bool Solver::CanFindSolution(std::array<uint, 81> grid)
 {
 	return Solve(grid);
 }
 
-bool Solver::FindUnassignedLocation(const std::array<int, 81>& grid, int& idx)
+bool Solver::FindUnassignedLocation(const std::array<uint, 81>& grid, uint& idx)
 {
 	for(int i = 0; i < 81; i++)
 	{
@@ -33,7 +33,7 @@ bool Solver::FindUnassignedLocation(const std::array<int, 81>& grid, int& idx)
 	return false;
 }
 
-bool Solver::IsSafe(std::array<int, 81>& grid, const int idx, const int val)
+bool Solver::IsSafe(std::array<uint, 81>& grid, const uint idx, const uint val)
 {
 	int original_value = grid[idx];
 	grid[idx] = val;
@@ -42,9 +42,9 @@ bool Solver::IsSafe(std::array<int, 81>& grid, const int idx, const int val)
 	return res;
 }
 
-bool Solver::Backtrack(std::array<int, 81>& grid)
+bool Solver::Backtrack(std::array<uint, 81>& grid)
 {
-	int idx = 0;
+	uint idx = 0;
 	if(!FindUnassignedLocation(grid, idx))
 	{
 		return true;
@@ -65,7 +65,7 @@ bool Solver::Backtrack(std::array<int, 81>& grid)
 	return false;
 }
 
-bool Solver::CheckArray(const std::array<int, 9>& arr)
+bool Solver::CheckArray(const std::array<uint, 9>& arr)
 {
 	std::unordered_map<int, int> map;
 	for(int t = 0; t < 9; t++)
@@ -81,9 +81,9 @@ bool Solver::CheckArray(const std::array<int, 9>& arr)
 	return true;
 }
 
-std::array<int, 9> Solver::GetRow(const std::array<int, 81>& grid, const uint8 row) const
+std::array<uint, 9> Solver::GetRow(const std::array<uint, 81>& grid, const uint8 row) const
 {
-	std::array<int, 9> result;
+	std::array<uint, 9> result;
 	for(int x = 0; x < 9; x++)
 	{
 		result[x] = grid[x + row * 9];
@@ -91,9 +91,9 @@ std::array<int, 9> Solver::GetRow(const std::array<int, 81>& grid, const uint8 r
 	return result;
 }
 
-std::array<int, 9> Solver::GetCol(const std::array<int, 81>& grid, const uint8 col) const
+std::array<uint, 9> Solver::GetCol(const std::array<uint, 81>& grid, const uint8 col) const
 {
-	std::array<int, 9> result;
+	std::array<uint, 9> result;
 	for(int y = 0; y < 9; y++)
 	{
 		result[y] = grid[y * 9 + col];
@@ -101,9 +101,9 @@ std::array<int, 9> Solver::GetCol(const std::array<int, 81>& grid, const uint8 c
 	return result;
 }
 
-std::array<int, 9> Solver::GetBox(const std::array<int, 81>& grid, const uint8 box) const
+std::array<uint, 9> Solver::GetBox(const std::array<uint, 81>& grid, const uint8 box) const
 {
-	std::array<int, 9> result = {0};
+	std::array<uint, 9> result = {0};
 	int idx = 0;
 	const int start_x = (box % 3) * 3;
 	const int start_y = static_cast<int>(std::floor(box / 3)) * 3;
@@ -118,13 +118,13 @@ std::array<int, 9> Solver::GetBox(const std::array<int, 81>& grid, const uint8 b
 	return result;
 }
 
-bool Solver::IsBoardValid(const std::array<int, 81>& grid)
+bool Solver::IsBoardValid(const std::array<uint, 81>& grid)
 {
 	for(uint8 i = 0; i < 9; i++)
 	{
-		std::array<int, 9> col = GetCol(grid, i);
-		std::array<int, 9> row = GetRow(grid, i);
-		std::array<int, 9> box = GetBox(grid, i);
+		std::array<uint, 9> col = GetCol(grid, i);
+		std::array<uint, 9> row = GetRow(grid, i);
+		std::array<uint, 9> box = GetBox(grid, i);
 
 		if(!CheckArray(col))
 			return false;

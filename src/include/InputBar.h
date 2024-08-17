@@ -6,125 +6,88 @@
 #include "types.h"
 
 #include <array>
+#include <functional>
 
-/*
-
-enum ButtonType
+template <typename T>
+class Button
 {
-	Digit = 0,
-	Pencil,
-	Erase,
-	Solve,
-	None
-};
-
-struct InputButton
-{
-	ButtonType type;
-	sf::Font font;
-	int digit;
-	std::string label;
-	sf::Text text;
-	sf::Vector2f size;
-	sf::Vector2f position;
-	sf::Color text_color;
-	sf::Color background_color;
-	sf::Color border_color;
-	float border_width;
-
-	sf::RectangleShape rect;
-
-	void Draw(sf::RenderWindow& window)
+public:
+	Button()
 	{
-		text.setFont(font);
+		shape.setFillColor(colors.bg);
+	}
+	void SetFunction(const std::function<T()> func)
+	{
+		ClickFunction = func;
+	}
+	void SetSize(const sf::Vector2f& size)
+	{
+		shape.setSize(size);
+	}
+	void SetPosition(const sf::Vector2f& position)
+	{
+		shape.setPosition(position);
+	}
+	void SetBorder(const float thickness)
+	{
+		shape.setOutlineColor(colors.border);
+		shape.setOutlineThickness(thickness);
+	}
+	void SetLabel(const std::string& label)
+	{
+		label_text = label;
 		text.setString(label);
-		text.setFillColor(text_color);
-
+		text.setFont(font);
+		text.setCharacterSize(24);
+		text.setFillColor(colors.fg);
 		text.setOrigin(text.getLocalBounds().getSize() / 2.0f +
 					   text.getLocalBounds().getPosition());
-		text.setPosition(rect.getGlobalBounds().getPosition() +
-						 rect.getLocalBounds().getSize() / 2.f);
-
-		window.draw(rect);
-		window.draw(text);
+		text.setPosition(shape.getGlobalBounds().getPosition() +
+						 shape.getLocalBounds().getSize() / 2.f);
 	}
 
-	void Set()
+	void MoveBy(const sf::Vector2f& offset)
 	{
-		rect.setFillColor(background_color);
-		rect.setOutlineColor(border_color);
-		rect.setOutlineThickness(border_width);
-		rect.setPosition(position);
-		rect.setSize(size);
-		text.setString(label);
+		const auto top_left = shape.getPosition();
+		shape.setPosition(top_left + offset);
+		SetLabel(label_text);
 	}
+	std::string label_text;
+	sf::Font font;
+	sf::Text text;
+	sf::RectangleShape shape;
+	std::function<T()> ClickFunction;
+
+	ColorSet colors = {sf::Color::Black, sf::Color::White, sf::Color::Black, sf::Color::Blue};
 };
-
-
 
 class InputBar
 {
 public:
-	InputBar(const sf::Vector2f screen_dimensions)
+	InputBar(GridManager& gm) : r_grid_manager(gm)
 	{
-		// take center of screen, minus half the input bar width, and 15% from bottom of screen
-
-		m_position = sf::Vector2f(screen_dimensions.x * 0.5f - button_width * 4.5f,
-								  screen_dimensions.y - screen_dimensions.y * 0.15f);
 		InitButtons();
 	}
 
-	void Draw(sf::RenderWindow& window)
+	void ClickAtPosition(const sf::Vector2i& position)
 	{
 		for(auto& button : m_buttons)
 		{
-			button.Draw(window);
-		}
-	}
+			const auto& bounds = button.shape.getGlobalBounds();
 
-	bool ClickAtPosition(const sf::Vector2i& position, Grid& grid, Solver& solver)
-	{
-		int idx = GetButtonIdxFromPosition(position);
-
-		if(idx == -1)
-			return false;
-
-		switch(m_buttons[idx].type){
-			case ButtonType::Digit:
-				return grid.SetCellDigit(m_buttons[idx].digit);
-			case ButtonType::Erase:
-				return grid.EraseCellDigit();
-			case ButtonType::Pencil:
-				return grid.TogglePencilMode();
-			case ButtonType::Solve:
-				solver.Solve(grid.digits);
-			case ButtonType::None:
-			return false;
-		}
-		return false;
-	}
-
-	int GetButtonIdxFromPosition(const sf::Vector2i& position)
-	{
-		for(int i = 0; i < m_buttons.size(); i++)
-		{
-			InputButton& but = m_buttons[i];
-			if(position.x > but.position.x && position.x < (but.position.x + button_width) &&
-			   position.y > but.position.y && position.y < (but.position.y + button_height))
+			if(position.x < bounds.left + bounds.width && position.x > bounds.left &&
+			   position.y > bounds.top && position.y < bounds.top + bounds.height)
 			{
-				return i;
+				button.ClickFunction();
+				break;
 			}
 		}
-		return -1;
-	}
-	const std::vector<InputButton>& GetButtons()
-	{
-		return const_cast<std::vector<InputButton>&>(m_buttons);
 	}
 
 private:
 	void InitButtons()
 	{
+		GridManager& gm = r_grid_manager;
 		sf::Font font;
 
 		if(!font.loadFromFile("./resources/fonts/futura.ttf"))
@@ -132,90 +95,73 @@ private:
 			throw std::runtime_error("Failed to load font");
 		}
 
-		for(int x = 0; x < 9; x++)
+		for(int x = 0; x < 12; x++)
 		{
-			InputButton button;
-			button.digit = x+1;
-			button.background_color = sf::Color::White;
-			button.text_color = sf::Color::Black;
-			button.border_color = sf::Color::Blue;
-			button.border_width = 3.0f;
-			button.size = sf::Vector2f(button_width, button_height);
-			button.position = sf::Vector2f(m_position.x + (button_width + button.border_width) * x,
-										   m_position.y) -
-							  2.0f * sf::Vector2f(button.border_width, 0.0f);
-			button.font = font;
-			button.label = std::to_string(x + 1);
+			m_buttons.push_back(Button<bool>());
+			auto& button = m_buttons[x];
 
-			button.Set();
-			button.type = ButtonType::Digit;
-			m_buttons.push_back(button);
+			button.SetSize({button_width, button_height});
+			const float x_pos = (button_width + border_width) * x + border_width;
+			const float y_pos = 0.0f;
+			button.SetPosition({x_pos, y_pos});
+			button.font = font;
+			button.SetBorder(2.0f);
+			if(x < 9)
+			{
+				button.SetLabel(std::to_string(x + 1));
+				button.SetFunction([x, &gm]() {
+					std::cout << "Filled Number: " << x + 1 << std::endl;
+					gm.SetCellDigit(x + 1);
+					return true;
+				});
+			}
+			else
+			{
+				switch(x)
+				{
+				case 9:
+					button.SetLabel("del");
+					button.SetFunction([&gm]() {
+						gm.EraseCellDigit();
+						std::cout << "Deleted cell" << std::endl;
+						return true;
+					});
+					break;
+				case 10:
+					button.SetLabel("p");
+					button.SetFunction([]() {
+						std::cout << "Clicked pencil" << std::endl;
+						return true;
+					});
+					break;
+				case 11:
+					button.SetLabel("sol");
+					button.SetFunction([&gm]() {
+						gm.FillWithSolution();
+						std::cout << "Clicked solved" << std::endl;
+						return true;
+					});
+					break;
+				}
+			}
 		}
 
-		
-
-		InputButton pencil_button;
-		pencil_button.background_color = sf::Color::White;
-		pencil_button.text_color = sf::Color::Black;
-		pencil_button.border_color = sf::Color::Blue;
-		pencil_button.border_width = 3.0f;
-		pencil_button.size = sf::Vector2f(button_width, button_height);
-		pencil_button.position =
-			sf::Vector2f(m_position.x + (button_width + pencil_button.border_width) * 7,
-						 m_position.y + button_height + pencil_button.border_width) -
-			2.0f * sf::Vector2f(pencil_button.border_width, 0.0f);
-		pencil_button.font = font;
-		pencil_button.label = "P";
-
-		pencil_button.Set();
-		pencil_button.type = ButtonType::Pencil;
-		m_buttons.push_back(pencil_button);
-
-		InputButton button;
-		button.background_color = sf::Color::White;
-		button.text_color = sf::Color::Black;
-		button.border_color = sf::Color::Blue;
-		button.border_width = 3.0f;
-		button.size = sf::Vector2f(button_width, button_height);
-		button.position = sf::Vector2f(m_position.x + (button_width + button.border_width) * 8,
-									   m_position.y + button_height + button.border_width) -
-						  2.0f * sf::Vector2f(button.border_width, 0.0f);
-		button.font = font;
-		button.label = "X";
-
-		button.Set();
-		button.type = ButtonType::Erase;
-		m_buttons.push_back(button);
-
-		InputButton solve_button;
-		solve_button.background_color = sf::Color::White;
-		solve_button.text_color = sf::Color::Black;
-		solve_button.border_color = sf::Color::Blue;
-		solve_button.border_width = 3.0f;
-		solve_button.size = sf::Vector2f(button_width, button_height);
-		solve_button.position = sf::Vector2f(m_position.x + (button_width + button.border_width) * 9,
-									   m_position.y + button_height + button.border_width) -
-						  2.0f * sf::Vector2f(button.border_width, 0.0f);
-		solve_button.font = font;
-		solve_button.label = "S";
-
-		solve_button.Set();
-		solve_button.type = ButtonType::Solve;
-		m_buttons.push_back(solve_button);
+		const float curr_x_center =
+			m_buttons[0].shape.getPosition().x + button_width * 6.0f + border_width * 5.0f;
+		for(auto& button : m_buttons)
+		{
+			button.MoveBy({400 - curr_x_center, 660});
+		}
 	}
 
-	std::vector<InputButton>& GetButtons() const
-	{
-		return const_cast<std::vector<InputButton>&>(m_buttons);
-	}
+public:
+	std::vector<Button<bool>> m_buttons;
 
 private:
 	float button_width = 35.0f;
 	float button_height = 35.0f;
+	float border_width = 3.0f;
 
 	sf::Vector2f m_position;
-	std::vector<InputButton> m_buttons;
+	GridManager& r_grid_manager;
 };
-
-
-*/
