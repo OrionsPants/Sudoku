@@ -2,62 +2,42 @@
 
 #include <SFML/Graphics.hpp>
 
+#include "GridManager.h"
+#include "InputBar.h"
+#include "InputHandler.h"
+#include "Renderer.h"
+#include "Solver.h"
 #include "types.h"
-#include "Grid.h"
-
-
 
 class App
 {
 
 public:
 	App()
-		: m_background_color(sf::Color(45, 20, 20, 255))
-		, m_grid(sf::Vector2f(800/2, 600/2))
+		: m_background_color(sf::Color(255, 255, 255, 255))
+		, m_window(sf::VideoMode(800, 800), "Sudoku")
+		, m_input_handler(m_grid_manager, m_window, m_solver)
+		//, m_input_bar(InputBar(sf::Vector2f(800, 800)))
+		, m_renderer(m_grid_manager.GetUI())
 	{
-		
 		SetDefaultContextSettings();
+		m_grid_manager.SetGridCenterPosition({400.0f, 400.0f});
 	}
 
 public:
-	void Run()
-	{
-		sf::RenderWindow window(sf::VideoMode(800, 600), "Sudoku", sf::Style::Default, settings);
-		window.setFramerateLimit(m_framerate_limit);
-
-		while(window.isOpen())
-		{
-			HandleEvents(window);
-			window.clear(m_background_color);
-
-            m_grid.RenderToWindow(window);
-			window.display();
-		}
-	}
+	void Run();
 
 private:
-	void HandleEvents(sf::RenderWindow& window)
-	{
-		for(auto event = sf::Event{}; window.pollEvent(event);)
-		{
-			if(event.type == sf::Event::Closed)
-			{
-				window.close();
-			}
-		}
-	}
-	void SetDefaultContextSettings()
-	{
-		settings.depthBits = 24;
-		settings.stencilBits = 8;
-		settings.antialiasingLevel = 8;
-		settings.sRgbCapable = true;
-	}
+	void Initialise();
+	void SetDefaultContextSettings();
 
 private:
-
-	Grid m_grid;
-
+	Renderer m_renderer;
+	Solver m_solver;
+	//InputBar m_input_bar;
+	sf::RenderWindow m_window;
+	GridManager m_grid_manager;
+	InputHandler m_input_handler;
 	uint16 m_framerate_limit = 60;
 	sf::ContextSettings settings;
 	sf::Color m_background_color;

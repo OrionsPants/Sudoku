@@ -2,6 +2,8 @@
 
 #include <SFML/Graphics.hpp>
 
+#include "types.h"
+
 #include <random>
 
 template<typename T>
@@ -13,6 +15,4 @@ T GetRandomInRange(const T min, const T max){
     return static_cast<T>(distr(gen));
 }
 
-sf::Color GetRandomColor(){
-    return sf::Color(GetRandomInRange<uint8>(0,255), GetRandomInRange<uint8>(0,255), GetRandomInRange<uint8>(0,255), 255);
-}
+sf::Color GetRandomColor();
